@@ -90,7 +90,6 @@ Plik MLD zawiera mapowanie kolumn, typy danych oraz instrukcje ładowania, co za
 
 W pliku `sql-vehicle.sql` znajdują się przykładowe zapytania:
 
-* Tworzenie tabeli docelowej z odpowiednimi typami kolumn (`CREATE TABLE`).
 * Ładowanie danych z tymczasowej tabeli.
 * Analiza z użyciem funkcji okna (OVER):
 
