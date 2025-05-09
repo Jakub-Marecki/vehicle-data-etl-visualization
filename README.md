@@ -48,8 +48,8 @@ Instalacja środowiska:
 
 ```bash
 python -m venv venv       # utworzenie wirtualnego środowiska
-source venv/bin/activate  # aktywacja (Linux/macOS)
-# venv\Scripts\activate # aktywacja (Windows)
+# source venv/bin/activate  # aktywacja (Linux/macOS)
+venv\Scripts\activate # aktywacja (Windows)
 pip install -r requirements.txt
 ```
 
