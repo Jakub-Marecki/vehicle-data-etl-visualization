@@ -4,17 +4,14 @@
 
 1. [Opis projektu](#opis-projektu)
 2. [Struktura repozytorium](#struktura-repozytorium)
-3. [Wymagania](#wymagania)
-4. [Instalacja i konfiguracja](#instalacja-i-konfiguracja)
-5. [Proces ETL](#proces-etl)
+3. [Wymagania i instalacja](#wymagania-i-instalacja)
+4. [Proces ETL](#proces-etl)
 
    * [1. Ekstrakcja (API)](#1-ekstrakcja-api)
    * [2. Transformacja danych](#2-transformacja-danych)
    * [3. Ładowanie do Teradata](#3-ładowanie-do-teradata)
-6. [Wizualizacja w Power BI](#wizualizacja-w-power-bi)
-7. [Uruchomienie](#uruchomienie)
-8. [Kontrybucje](#kontrybucje)
-9. [Licencja](#licencja)
+   * [4. Zapytania SQL – analiza danych](#4-zapytania-sql--analiza-danych)
+5. [Wizualizacja w Power BI](#wizualizacja-w-power-bi)
 
 ---
 
@@ -23,8 +20,8 @@
 Celem projektu jest zbudowanie end-to-endowego procesu ETL:
 
 1. **Ekstrakcja**: pobieranie miesięcznych danych rejestracji pojazdów z publicznego API CEPiK.
-2. **Transformacja**: spłaszczanie i czyszczenie danych (JSON → CSV) przy użyciu biblioteki pandas oraz zastosowanie definicji kolumn z pliku MLD.
-3. **Ładowanie**: załadowanie przetworzonych danych do hurtowni Teradata.
+2. **Transformacja**: spłaszczenie i czyszczenie danych (JSON → CSV) przy użyciu biblioteki pandas.
+3. **Ładowanie**: załadowanie przetworzonych danych do hurtowni Teradata przy użyciu narzędzia MLOAD.
 4. **Wizualizacja**: stworzenie raportu w Power BI do analizy trendów rejestracji.
 
 ## Struktura repozytorium
@@ -34,124 +31,83 @@ Celem projektu jest zbudowanie end-to-endowego procesu ETL:
 ├── Pobieranie-danych.py          # Skrypt Python do ekstrakcji danych z API
 ├── data_vehicle_v3_cleaned.csv   # Wynikowy plik CSV po transformacji
 ├── pojazdy_fixed.mld             # Definicje pól i mapowania formatu MLD
-├── sql-vehicle.sql               # Skrypt SQL do stworzenia tabeli i załadowania danych w Teradata
+├── sql-vehicle.sql               # Skrypt SQL do tworzenia tabel i analizy danych
 └── Raport-vehicle-powerbi.pbix   # Plik Power BI z wizualizacją
 ```
 
-## Wymagania
+## Wymagania i instalacja
+
+Aby uruchomić projekt, wystarczy:
 
 * Python 3.8+
-* Biblioteki Python:
+* Biblioteki (`requests`, `pandas`, `python-dateutil`) zdefiniowane w `requirements.txt`
+* Skonfigurowany plik `teradata_config.json` z danymi połączenia do Teradata
+* (Opcjonalnie) Power BI Desktop lub dostęp do CSV `data_vehicle_v3_cleaned.csv`
 
-  * `requests`
-  * `pandas`
-  * `python-dateutil`
-* Plik MLD (`pojazdy_fixed.mld`) z definicjami i mapowaniem kolumn
-* Dostęp do instancji Teradata (poświadczenia, host, port)
-* Power BI Desktop (wersja 2.XX lub wyższa)
+Instalacja środowiska:
 
-## Instalacja i konfiguracja
-
-1. Sklonuj repozytorium:
-
-   ```bash
-   git clone https://github.com/twoje-konto/etl-teradata-powerbi.git
-   cd etl-teradata-powerbi
-   ```
-2. Utwórz i aktywuj wirtualne środowisko:
-
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # Linux/macOS
-   venv\Scripts\activate     # Windows
-   ```
-3. Zainstaluj zależności:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Skonfiguruj połączenie do Teradata:
-
-   * Utwórz plik `teradata_config.json` obok skryptów:
-
-     ```json
-     {
-       "host": "<adres_host>",
-       "username": "<użytkownik>",
-       "password": "<hasło>",
-       "database": "<schemat>"
-     }
-     ```
+```bash
+python -m venv venv       # utworzenie wirtualnego środowiska
+source venv/bin/activate  # aktywacja (Linux/macOS)
+# venv\Scripts\activate # aktywacja (Windows)
+pip install -r requirements.txt
+```
 
 ## Proces ETL
 
 ### 1. Ekstrakcja (API)
 
-W pliku `Pobieranie-danych.py` znajduje się klasa i funkcje:
+W pliku `Pobieranie-danych.py` znajdują się:
 
 * **SSLContextAdapter**: adapter HTTPS z niestandardowym poziomem zabezpieczeń.
-* **fetch\_monthly**: pobiera dane dla pojedynczego województwa i miesiąca.
-* **main**: iteruje przez wszystkie województwa i miesiące zdefiniowane w tablicy `WOJEWODZTWA`, zbiera rekordy, a następnie spłaszcza strukturę JSON.
+* **fetch\_monthly**: pobieranie danych rejestracji pojazdów z API CEPiK dla wybranego województwa i miesiąca.
+* **main**: iteracja przez wszystkie województwa i miesiące, zbieranie rekordów oraz spłaszczanie struktury JSON.
 
 Parametry:
 
-* Rok docelowy: definiowany w zmiennej `year` (domyślnie 2019).
-* Zakres dat: od pierwszego do ostatniego dnia każdego miesiąca.
+* `year` – rok danych (domyślnie 2019).
+* Zakres od pierwszego do ostatniego dnia każdego miesiąca.
 
-Wynik: surowy plik CSV zapisany w katalogu wyjściowym (`OUT_DIR`).
+Efekt: surowy plik CSV zapisany w katalogu wyjściowym.
 
 ### 2. Transformacja danych
 
-* Użycie `pandas.json_normalize` do przekształcenia zagnieżdżonego JSON w płaską tabelę.
-* Wczytanie pliku `pojazdy_fixed.mld` w celu pobrania definicji kolumn i mapowania wartości.
-* Czyszczenie danych (usuwanie duplikatów, uzupełnianie braków) odbywa się w kodzie.
-* Finalny CSV: `data_vehicle_v3_cleaned.csv`.
+* `pandas.json_normalize` – spłaszczenie zagnieżdżonego JSON do formatu tabelarycznego.
+* Czyszczenie: usuwanie duplikatów, uzupełnianie braków (imputacja wartości domyślnych).
+* Finalny plik: `data_vehicle_v3_cleaned.csv`.
 
 ### 3. Ładowanie do Teradata
 
-Skrypt SQL (`sql-vehicle.sql`) zawiera:
-
-1. Definicję tabeli docelowej (`CREATE TABLE …`).
-2. Instrukcję `LOAD` lub `INSERT` z wykorzystaniem BTEQ/TPump.
-
-Przykładowe polecenie w terminalu:
+Do ładowania danych używane jest narzędzie **MLOAD** i plik definicji **`pojazdy_fixed.mld`** (Map Load Definition):
 
 ```bash
-bteq < sql-vehicle.sql
+mload < ścieżka/do/pojazdy_fixed.mld
 ```
 
-Upewnij się, że w pliku `teradata_config.json` ustawiono prawidłowe parametry połączenia, a w skrypcie SQL odwołujesz się do zmiennych środowiskowych.
+Plik MLD zawiera mapowanie kolumn, typy danych oraz instrukcje ładowania, co zapewnia spójność i automatyzację.
+
+### 4. Zapytania SQL – analiza danych
+
+W pliku `sql-vehicle.sql` znajdują się przykładowe zapytania:
+
+* Tworzenie tabeli docelowej z odpowiednimi typami kolumn (`CREATE TABLE`).
+* Ładowanie danych z tymczasowej tabeli.
+* Analiza z użyciem funkcji okna (OVER):
+
+  * Obliczanie 12-miesięcznej średniej ruchomej rejestracji,
+  * Ranking miesięcy w ramach województw (RANK() OVER (PARTITION BY wojewodztwo ORDER BY liczba DESC)),
+  * Cumulative Sum – SUM(liczba) OVER (PARTITION BY marka ORDER BY data ROWS UNBOUNDED PRECEDING).
+
+Dodatkowo przykłady agregacji i filtrowania pozwalają na szybkie wyciąganie wniosków.
 
 ## Wizualizacja w Power BI
 
-* Otwórz plik `Raport-vehicle-powerbi.pbix` w Power BI Desktop.
-* Źródło danych: połączenie do hurtowni Teradata lub plik CSV `data_vehicle_v3_cleaned.csv`.
+* Źródło danych: tabela SQL eksportowana do `dane_pojazdy_output.csv` lub bezpośrednie połączenie do Teradata.
 * Raport zawiera:
 
-  * Trend miesięcznych rejestracji.
-  * Porównanie liczb nowych i zarejestrowanych pojazdów.
-  * Podział wg marki i modelu.
+  * Trend miesięcznych rejestracji w wykresie liniowym,
+  * Porównanie nowych vs. zarejestrowanych pojazdów w wykresie słupkowym,
+  * Podział liczby rejestracji wg marki i modelu (tabela i wykres kołowy).
+* Interaktywne filtry: miesiąc, marka, województwo itp.
 
-Możesz filtrować dane po miesiącu, marce, województwie itp.
-
-## Uruchomienie
-
-1. Wyeksportuj dane:
-
-   ```bash
-   python Pobieranie-danych.py
-   ```
-2. Załaduj do Teradata:
-
-   ```bash
-   bteq < sql-vehicle.sql
-   ```
-3. Otwórz Power BI, odśwież dane i eksploruj raport.
-
-## Kontrybucje
-
-Wszelkie uwagi, poprawki i propozycje usprawnień mile widziane. Proszę otwierać issues oraz pull requesty.
-
-## Licencja
-
-Projekt udostępniony na licencji MIT. Zobacz plik `LICENSE`.
+---
