@@ -32,6 +32,7 @@ Celem projektu jest zbudowanie end-to-endowego procesu ETL:
 ├── data_vehicle_v3_cleaned.csv   # Wynikowy plik CSV po transformacji
 ├── pojazdy_fixed.mld             # Definicje pól i mapowania formatu MLD
 ├── sql-vehicle.sql               # Skrypt SQL do tworzenia tabel i analizy danych
+├── dane_pojazdy_output.csv       # Eksport tabeli po zapytaniach SQL
 └── Raport-vehicle-powerbi.pbix   # Plik Power BI z wizualizacją
 ```
 
