@@ -1,0 +1,100 @@
+.LOGON 192.168.0.39/dbc,dbc;
+.LOGTABLE POJAZDY.LT_dane_pojazdy;
+
+CREATE MULTISET TABLE POJAZDY.dane_pojazdy
+(
+    id BIGINT,
+    vehicle_type VARCHAR(50) CHARACTER SET LATIN CASESPECIFIC,
+    data_od DATE FORMAT 'YY/MM/DD',
+    data_do DATE FORMAT 'YY/MM/DD',
+    attributes_marka VARCHAR(40) CHARACTER SET LATIN CASESPECIFIC,
+    attributes_kategoria_pojazdu FLOAT,
+    attributes_typ VARCHAR(40) CHARACTER SET LATIN CASESPECIFIC,
+    attributes_model VARCHAR(40) CHARACTER SET LATIN CASESPECIFIC,
+    attributes_wariant VARCHAR(20) CHARACTER SET LATIN CASESPECIFIC,
+    attributes_rodzaj_pojazdu VARCHAR(255) CHARACTER SET LATIN CASESPECIFIC,
+    attributes_pochodzenie_pojazdu VARCHAR(255) CHARACTER SET LATIN CASESPECIFIC,
+    attributes_rok_produkcji INTEGER,
+    attributes_data_pierwszej_rejestracji_w_kraju DATE FORMAT 'YY/MM/DD',
+    attributes_pojemnosc_skokowa_silnika FLOAT,
+    attributes_masa_wlasna INTEGER,
+    attributes_rodzaj_paliwa VARCHAR(255) CHARACTER SET LATIN CASESPECIFIC,
+    attributes_wojewodztwo_kod INTEGER
+)
+    PRIMARY INDEX (id);
+
+.BEGIN IMPORT MLOAD
+    TABLES       POJAZDY.dane_pojazdy
+    WORKTABLES   POJAZDY.WT_dane_pojazdy
+    ERRORTABLES  POJAZDY.ET_dane_pojazdy
+                 POJAZDY.UV_dane_pojazdy
+    SESSIONS     4;
+	
+.LAYOUT LAYOUT_dane_pojazdy;
+.FIELD id                                            * VARCHAR(20);
+.FIELD vehicle_type                                  * VARCHAR(50);
+.FIELD data_od                                       * VARCHAR(10);
+.FIELD data_do                                       * VARCHAR(10);
+.FIELD attributes_marka                              * VARCHAR(40);
+.FIELD attributes_kategoria_pojazdu                  * VARCHAR(20);
+.FIELD attributes_typ                                * VARCHAR(40);
+.FIELD attributes_model                              * VARCHAR(40);
+.FIELD attributes_wariant                            * VARCHAR(20);
+.FIELD attributes_rodzaj_pojazdu                     * VARCHAR(255);
+.FIELD attributes_pochodzenie_pojazdu                * VARCHAR(255);
+.FIELD attributes_rok_produkcji                      * VARCHAR(10);
+.FIELD attributes_data_pierwszej_rejestracji_w_kraju * VARCHAR(19);
+.FIELD attributes_pojemnosc_skokowa_silnika          * VARCHAR(20);
+.FIELD attributes_masa_wlasna                        * VARCHAR(10);
+.FIELD attributes_rodzaj_paliwa                      * VARCHAR(255);
+.FIELD attributes_wojewodztwo_kod                    * VARCHAR(10);
+
+.DML LABEL DML_INS;
+INSERT INTO POJAZDY.dane_pojazdy
+(
+    id,
+    vehicle_type,
+    data_od,
+    data_do,
+    attributes_marka,
+    attributes_kategoria_pojazdu,
+    attributes_typ,
+    attributes_model,
+    attributes_wariant,
+    attributes_rodzaj_pojazdu,
+    attributes_pochodzenie_pojazdu,
+    attributes_rok_produkcji,
+    attributes_data_pierwszej_rejestracji_w_kraju,
+    attributes_pojemnosc_skokowa_silnika,
+    attributes_masa_wlasna,
+    attributes_rodzaj_paliwa,
+    attributes_wojewodztwo_kod
+)
+VALUES
+(
+    :id,
+    :vehicle_type,
+    :data_od,
+    :data_do,
+    :attributes_marka,
+    :attributes_kategoria_pojazdu,
+    :attributes_typ,
+    :attributes_model,
+    :attributes_wariant,
+    :attributes_rodzaj_pojazdu,
+    :attributes_pochodzenie_pojazdu,
+    :attributes_rok_produkcji,
+    :attributes_data_pierwszej_rejestracji_w_kraju,
+    :attributes_pojemnosc_skokowa_silnika,
+    :attributes_masa_wlasna,
+    :attributes_rodzaj_paliwa,
+    :attributes_wojewodztwo_kod
+);
+
+.IMPORT INFILE "C:\Users\ASUS ZENBOOK\Downloads\data_vehicle_v3_cleaned.csv"
+    LAYOUT     LAYOUT_dane_pojazdy
+    FORMAT     VARTEXT ','
+    APPLY      DML_INS;
+
+.END MLOAD;
+.LOGOFF;
